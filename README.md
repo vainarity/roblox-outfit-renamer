@@ -13,3 +13,4 @@ bulk rename all your roblox outfits from the terminal.
 ## notes
 
 outfits containing items you no longer own will be skipped automatically.
+YOLO
