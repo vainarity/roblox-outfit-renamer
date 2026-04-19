@@ -1,16 +1,47 @@
 import readline from "readline";
+import { Writable } from "stream";
 
-const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+const mutedStdout = new Writable({
+  write(chunk, encoding, callback) {
+    if (!mutedStdout.muted) {
+      process.stdout.write(chunk, encoding);
+    }
+    callback();
+  }
+});
+mutedStdout.muted = false;
 
-function ask(q) {
-  return new Promise(resolve => rl.question(q, answer => resolve(answer.trim())));
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: mutedStdout,
+  terminal: true
+});
+
+function ask(question, hidden = false) {
+  return new Promise((resolve) => {
+    if (!hidden) {
+      mutedStdout.muted = false;
+      rl.question(question, (answer) => resolve(answer.trim()));
+      return;
+    }
+
+    process.stdout.write(question);
+    mutedStdout.muted = true;
+    rl.question("", (answer) => {
+      mutedStdout.muted = false;
+      process.stdout.write("\n");
+      resolve(answer.trim());
+    });
+  });
 }
 
-const raw = await ask("paste cookie: ");
+const raw =
+  process.env.ROBLOSECURITY?.trim() ||
+  await ask("Paste .ROBLOSECURITY cookie (hidden): ", true);
 const token = raw.includes("|_") ? raw.split("|_").pop() : raw;
 const COOKIE = `.ROBLOSECURITY=_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_${token}`;
 
-const NEW_NAME = await ask("rename all outfits to: ");
+const NEW_NAME = await ask("Rename all outfits to: ");
 rl.close();
 
 async function getCsrf() {
